@@ -33,3 +33,6 @@ Universal web scraper based on AFL Scraper functionality. Extracts structured da
   - Body: `{ url: string, type: 'match' | 'season', roundNumber?: number }`
   - Returns: `{ success: boolean, data: array, metadata: object, count: number }`
 
+---
+*Last deploy trigger: 2025-12-30 08:56 UTC+4*
+
