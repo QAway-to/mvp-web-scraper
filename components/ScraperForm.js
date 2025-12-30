@@ -1,9 +1,31 @@
 import { useState } from 'react';
 
+// Auto-detect URL type based on URL pattern
+function detectUrlType(url) {
+  if (url.includes('/seas/') && url.endsWith('.html')) {
+    return 'season'; // Season page like /afl/seas/2024.html
+  }
+  if (url.includes('/stats/games/')) {
+    return 'match'; // Match page like /afl/stats/games/2024/...
+  }
+  return null; // Unknown, keep current selection
+}
+
 export default function ScraperForm({ onScrape, isLoading }) {
   const [url, setUrl] = useState('');
-  const [type, setType] = useState('match');
+  const [type, setType] = useState('season'); // Default to season
   const [roundNumber, setRoundNumber] = useState('');
+
+  const handleUrlChange = (e) => {
+    const newUrl = e.target.value;
+    setUrl(newUrl);
+
+    // Auto-detect and set type based on URL
+    const detectedType = detectUrlType(newUrl);
+    if (detectedType) {
+      setType(detectedType);
+    }
+  };
 
   const handleSubmit = (e) => {
     e.preventDefault();
@@ -22,8 +44,8 @@ export default function ScraperForm({ onScrape, isLoading }) {
         <input
           type="url"
           value={url}
-          onChange={(e) => setUrl(e.target.value)}
-          placeholder="https://afltables.com/afl/stats/games/2024/... or https://afltables.com/afl/seas/2024.html"
+          onChange={handleUrlChange}
+          placeholder="https://afltables.com/afl/seas/2024.html"
           className="form-input"
           required
         />
