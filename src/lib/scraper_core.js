@@ -114,8 +114,8 @@ export async function collectRoundMatchLinksFromSeason(html, seasonUrl, roundNum
   const links = [];
   const seen = new Set();
 
-  // Find the anchor for this round
-  const anchor = $(`a[name="${roundNumber}"]`);
+  // Find the anchor for this round (support both name and id attributes)
+  const anchor = $(`a[name="${roundNumber}"], a[id="${roundNumber}"]`);
   if (anchor.length === 0) {
     return [];
   }
@@ -125,14 +125,16 @@ export async function collectRoundMatchLinksFromSeason(html, seasonUrl, roundNum
   anchor.parent().nextAll().addBack().find('a').each((i, elem) => {
     const $elem = $(elem);
     const name = $elem.attr('name');
+    const id = $elem.attr('id');
+    const identifier = name || id;
 
     // Stop if we hit another anchor
-    if (name && name !== String(roundNumber)) {
+    if (identifier && identifier !== String(roundNumber)) {
       return false; // break
     }
 
     // Start collecting after our anchor
-    if (name === String(roundNumber)) {
+    if (identifier === String(roundNumber)) {
       collecting = true;
       return;
     }
