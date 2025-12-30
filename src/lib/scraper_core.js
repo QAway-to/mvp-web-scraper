@@ -120,29 +120,46 @@ export async function collectRoundMatchLinksFromSeason(html, seasonUrl, roundNum
     return [];
   }
 
-  // Collect all "Match stats" links after this anchor until next anchor
-  let collecting = false;
-  anchor.parent().nextAll().addBack().find('a').each((i, elem) => {
+  // Collect all "Match stats" links after this anchor
+  // The structure is weird (anchors and tables mixed in center tag), so we:
+  // 1. Get all following siblings of the anchor
+  // 2. Iterate through them
+  // 3. If we hit another anchor (name/id), stop
+  // 4. If we hit a table, look for links inside it
+  let collecting = true;
+
+  // Create a collection of all following elements
+  const siblings = anchor.nextAll();
+
+  siblings.each((i, elem) => {
     const $elem = $(elem);
+
+    // Check if this element IS a new anchor or CONTAINS a new anchor
+    // Sometimes the anchor is a direct sibling <a name="10"></a>
+    // Sometimes it might be wrapped? (though in debug.html they are direct siblings)
+
+    // Check current element for name/id
     const name = $elem.attr('name');
     const id = $elem.attr('id');
-    const identifier = name || id;
-
-    // Stop if we hit another anchor
-    if (identifier && identifier !== String(roundNumber)) {
-      return false; // break
+    if (name || id) {
+      // We hit a new round anchor
+      return false; // break the loop
     }
 
-    // Start collecting after our anchor
-    if (identifier === String(roundNumber)) {
-      collecting = true;
-      return;
+    // Also check if this element contains an anchor (unlikely given structure but good for safety)
+    if ($elem.find('a[name], a[id]').length > 0) {
+      // If we find an anchor inside, we might need to stop.
+      // But in this HTML, anchors are siblings to tables. 
+      // If we find one, it's likely the next round.
+      return false;
     }
 
-    if (collecting) {
-      const text = $elem.text().trim();
+    // Capture links in this element (likely a table)
+    $elem.find('a').each((j, link) => {
+      const $link = $(link);
+      const text = $link.text().trim();
       if (text === 'Match stats') {
-        const href = $elem.attr('href');
+        const href = $link.attr('href');
         if (href && href.includes('stats/games/')) {
           const absoluteUrl = new URL(href, seasonUrl).href;
           if (!seen.has(absoluteUrl)) {
@@ -151,7 +168,7 @@ export async function collectRoundMatchLinksFromSeason(html, seasonUrl, roundNum
           }
         }
       }
-    }
+    });
   });
 
   return links;
