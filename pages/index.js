@@ -28,7 +28,7 @@ export default function Home() {
         <ScraperDashboard />
 
         <footer className="page-footer">
-          <p>Universal Web Scraper MVP - Extract structured data from any website</p>
+          <p>Universal Web Scraper MVP - Extract structured data from any website (v1.1)</p>
         </footer>
       </main>
     </>
