@@ -17,9 +17,34 @@ export default async function handler(req, res) {
     const { url, type, roundNumber } = req.body;
 
     if (!url) {
-      return res.status(400).json({ 
+      return res.status(400).json({
         error: 'URL is required',
         logs: [{ timestamp: new Date().toISOString(), type: 'error', message: 'URL is required' }]
+      });
+    }
+
+    // Validation: Check for URL/Type mismatch
+    if (type === 'match' && url.includes('/seas/')) {
+      return res.status(400).json({
+        error: 'Invalid Configuration',
+        message: 'You selected "Single Match" mode but provided a Season URL. Please switch "Scrape Type" to "Season" or provide a valid Match URL.',
+        logs: [{
+          timestamp: new Date().toISOString(),
+          type: 'error',
+          message: '❌ Mismatch: Season URL provided for Match scrape type.'
+        }]
+      });
+    }
+
+    if (type === 'season' && url.includes('/stats/games/')) {
+      return res.status(400).json({
+        error: 'Invalid Configuration',
+        message: 'You selected "Season" mode but provided a single Match URL. Please switch "Scrape Type" to "Single Match".',
+        logs: [{
+          timestamp: new Date().toISOString(),
+          type: 'error',
+          message: '❌ Mismatch: Match URL provided for Season scrape type.'
+        }]
       });
     }
 
@@ -41,7 +66,12 @@ export default async function handler(req, res) {
         data = await scrapeMatch(url, fetcher);
         metadata.matchCount = 1;
         metadata.rowCount = data ? data.length : 0;
-        addLog(`✅ Successfully scraped ${metadata.rowCount} rows`, 'success');
+
+        if (metadata.rowCount > 0) {
+          addLog(`✅ Successfully scraped ${metadata.rowCount} rows`, 'success');
+        } else {
+          addLog(`⚠️ Scraped 0 rows. Check if the page contains valid match statistics tables.`, 'warning');
+        }
       } catch (error) {
         addLog(`❌ Error scraping match: ${error.message}`, 'error');
         addLog(`Stack: ${error.stack}`, 'error');
@@ -51,7 +81,7 @@ export default async function handler(req, res) {
       // Scrape season
       const round = roundNumber ? parseInt(roundNumber) : null;
       addLog(`Fetching season page${round ? ` (Round ${round})` : ''}...`, 'info');
-      
+
       try {
         addLog('Expanding season to match URLs...', 'info');
         // Pass log callback to scrapeSeason
@@ -60,14 +90,18 @@ export default async function handler(req, res) {
         });
         metadata.roundNumber = round;
         metadata.rowCount = data.length;
-        
+
         // Extract year from URL for metadata
         const yearMatch = url.match(/\/seas\/(\d{4})\.html$/);
         if (yearMatch) {
           metadata.year = yearMatch[1];
         }
-        
-        addLog(`✅ Successfully scraped ${metadata.rowCount} rows from season`, 'success');
+
+        if (metadata.rowCount > 0) {
+          addLog(`✅ Successfully scraped ${metadata.rowCount} rows from season`, 'success');
+        } else {
+          addLog(`⚠️ Scraped 0 rows from season. Check if round number is correct or if matches have been played.`, 'warning');
+        }
       } catch (error) {
         addLog(`❌ Error scraping season: ${error.message}`, 'error');
         addLog(`Error details: ${error.stack || error.toString()}`, 'error');
@@ -80,7 +114,7 @@ export default async function handler(req, res) {
         throw error;
       }
     } else {
-      return res.status(400).json({ 
+      return res.status(400).json({
         error: 'Invalid type. Use "match" or "season"',
         logs: [{ timestamp: new Date().toISOString(), type: 'error', message: `Invalid type: ${type}` }]
       });
@@ -99,7 +133,7 @@ export default async function handler(req, res) {
     if (error.stack) {
       addLog(`Stack trace: ${error.stack}`, 'error');
     }
-    
+
     console.error('Scraping error:', error);
     return res.status(500).json({
       error: 'Scraping failed',

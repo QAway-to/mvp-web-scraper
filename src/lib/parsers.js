@@ -25,41 +25,50 @@ export async function parseMatchClean(html, url) {
   // Find all sortable tables
   $('table.sortable').each((i, table) => {
     const $table = $(table);
-    
-    // Find header cell with colspan (contains "Match Statistics")
-    const headerCell = $table.find('thead th[colspan]').first();
-    if (headerCell.length === 0) {
+
+    // Logic for AFL Tables structure:
+    // Row 0: Header with colspan (Team Name) e.g. "Geelong Match Statistics..."
+    // Row 1: Column headers e.g. #, Player, KI, MK...
+
+    const rows = $table.find('tr');
+    if (rows.length < 3) return; // Need at least header1, header2, and data
+
+    // Check first header row for Team Name
+    const firstRowText = $(rows[0]).text().trim();
+    if (!firstRowText.includes('Match Statistics')) {
       return;
     }
 
-    const headerText = headerCell.text().trim();
-    if (!headerText.includes('Match Statistics')) {
-      return;
-    }
+    // Extract team name
+    const teamName = firstRowText.split('Match Statistics')[0].trim();
 
-    // Extract team name (text before "Match Statistics")
-    const teamName = headerText.split('Match Statistics')[0].trim();
-
-    // Get column headers (second <tr> in <thead>)
-    const headerRows = $table.find('thead tr');
-    if (headerRows.length < 2) {
-      return;
-    }
-
+    // Get columns from second row
     const columns = [];
-    headerRows.eq(1).find('th').each((i, th) => {
+    $(rows[1]).find('th').each((i, th) => {
       columns.push($(th).text().trim());
     });
 
-    // Extract body rows
-    $table.find('tbody tr').each((i, row) => {
+    // If no TH found in second row, maybe they are TDs?
+    if (columns.length === 0) {
+      $(rows[1]).find('td').each((i, td) => {
+        columns.push($(td).text().trim());
+      });
+    }
+
+    if (columns.length === 0) return;
+
+    // Extract body rows (starting from index 2)
+    rows.slice(2).each((i, row) => {
       const $row = $(row);
       const text = $row.text();
-      
-      // Skip totals and opposition rows
-      if (text.includes('Totals') || text.includes('Opposition')) {
+
+      // Skip totals and opposition rows and header repetitions
+      if (text.includes('Totals') || text.includes('Opposition') || text.includes('Match Statistics')) {
         return;
       }
+
+      // Also skip if it seems to be a header row (re-checking columns)
+      if ($row.find('th').length > 0) return;
 
       const cells = [];
       $row.find('td').each((i, td) => {
@@ -71,14 +80,24 @@ export async function parseMatchClean(html, url) {
         cells.push(cellText);
       });
 
-      if (cells.length === columns.length) {
+      // Allow simple validation: verify we have roughly enough cells
+      // Sometimes 'Emergency' players might have fewer stats or diff structure
+      if (cells.length > 0) {
         const entry = {};
+
+        // Map available cells to columns
         columns.forEach((col, idx) => {
-          entry[col] = cells[idx];
+          if (idx < cells.length) {
+            entry[col] = cells[idx];
+          }
         });
-        entry['Team'] = teamName;
-        entry['SourceURL'] = url;
-        results.push(entry);
+
+        // Only add if we have a Player name (usually 2nd column, index 1)
+        if (entry['Player']) {
+          entry['Team'] = teamName;
+          entry['SourceURL'] = url;
+          results.push(entry);
+        }
       }
     });
   });
@@ -127,7 +146,7 @@ export async function parsePlayerDetails(html, url) {
 
   $('table.sortable').each((i, table) => {
     const $table = $(table);
-    
+
     const headerCell = $table.find('thead th[colspan]').first();
     if (headerCell.length === 0) {
       return;
@@ -153,7 +172,7 @@ export async function parsePlayerDetails(html, url) {
     $table.find('tbody tr').each((i, row) => {
       const $row = $(row);
       const text = $row.text();
-      
+
       if (text.includes('Totals') || text.includes('Coach')) {
         return;
       }
