@@ -79,9 +79,9 @@ export async function collectAllMatchLinksFromSeason(html, seasonUrl, year) {
   const links = [];
   const seen = new Set();
 
-  $(`a[href*="/afl/stats/games/${year}/"]`).each((i, elem) => {
+  $(`a[href*="stats/games/${year}/"]`).each((i, elem) => {
     const href = $(elem).attr('href');
-    if (href && href.match(new RegExp(`/afl/stats/games/${year}/[A-Za-z0-9]+\\.html$`))) {
+    if (href && href.match(new RegExp(`stats/games/${year}/[A-Za-z0-9]+\\.html$`))) {
       const absoluteUrl = new URL(href, seasonUrl).href;
       if (!seen.has(absoluteUrl)) {
         links.push(absoluteUrl);
@@ -141,7 +141,7 @@ export async function collectRoundMatchLinksFromSeason(html, seasonUrl, roundNum
       const text = $elem.text().trim();
       if (text === 'Match stats') {
         const href = $elem.attr('href');
-        if (href && href.includes('/afl/stats/games/')) {
+        if (href && href.includes('stats/games/')) {
           const absoluteUrl = new URL(href, seasonUrl).href;
           if (!seen.has(absoluteUrl)) {
             links.push(absoluteUrl);
