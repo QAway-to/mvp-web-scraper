@@ -34,5 +34,5 @@ Universal web scraper based on AFL Scraper functionality. Extracts structured da
   - Returns: `{ success: boolean, data: array, metadata: object, count: number }`
 
 ---
-*Last deploy trigger: 2025-12-30 08:56 UTC+4*
+*Last deploy trigger: 2025-12-30 08:59 UTC+4*
 
