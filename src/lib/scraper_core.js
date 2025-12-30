@@ -79,9 +79,9 @@ export async function collectAllMatchLinksFromSeason(html, seasonUrl, year) {
   const links = [];
   const seen = new Set();
 
-  $(`a[href*="/stats/games/${year}/"]`).each((i, elem) => {
+  $(`a[href*="/afl/stats/games/${year}/"]`).each((i, elem) => {
     const href = $(elem).attr('href');
-    if (href && href.match(new RegExp(`/stats/games/${year}/[A-Za-z0-9]+\\.html$`))) {
+    if (href && href.match(new RegExp(`/afl/stats/games/${year}/[A-Za-z0-9]+\\.html$`))) {
       const absoluteUrl = new URL(href, seasonUrl).href;
       if (!seen.has(absoluteUrl)) {
         links.push(absoluteUrl);
@@ -125,7 +125,7 @@ export async function collectRoundMatchLinksFromSeason(html, seasonUrl, roundNum
   anchor.parent().nextAll().addBack().find('a').each((i, elem) => {
     const $elem = $(elem);
     const name = $elem.attr('name');
-    
+
     // Stop if we hit another anchor
     if (name && name !== String(roundNumber)) {
       return false; // break
@@ -141,7 +141,7 @@ export async function collectRoundMatchLinksFromSeason(html, seasonUrl, roundNum
       const text = $elem.text().trim();
       if (text === 'Match stats') {
         const href = $elem.attr('href');
-        if (href && href.includes('/stats/games/')) {
+        if (href && href.includes('/afl/stats/games/')) {
           const absoluteUrl = new URL(href, seasonUrl).href;
           if (!seen.has(absoluteUrl)) {
             links.push(absoluteUrl);
@@ -167,11 +167,11 @@ export async function expandSeasonToMatchUrls(seasonUrl, fetcher, roundNumber = 
     const urls = await adapter.expandUrl(seasonUrl, fetcher, { roundNumber });
     return urls;
   }
-  
+
   // Fallback to direct implementation (backward compatibility)
   const html = await fetcher.get(seasonUrl);
   const year = extractYearFromSeasonUrl(seasonUrl);
-  
+
   if (!year) {
     throw new Error(`Cannot detect year from ${seasonUrl}`);
   }
@@ -194,14 +194,14 @@ export async function expandSeasonToMatchUrls(seasonUrl, fetcher, roundNumber = 
 export async function scrapeMatch(url, fetcher) {
   try {
     const html = await fetcher.get(url);
-    
+
     // Try to find adapter for this URL
     const adapter = findAdapter(url);
     if (adapter) {
       const rows = await adapter.parsePage(html, url);
       return rows;
     }
-    
+
     // Fallback to direct parser import (backward compatibility)
     const { parseMatchClean } = await import('./parsers.js');
     const rows = await parseMatchClean(html, url);
@@ -226,7 +226,7 @@ export async function scrapeSeason(seasonUrl, roundNumber = null, sleepBetween =
   try {
     log(`Fetching season page: ${seasonUrl}`, 'info');
     const matchUrls = await expandSeasonToMatchUrls(seasonUrl, fetcher, roundNumber);
-    
+
     if (matchUrls.length === 0) {
       log('No match URLs found in season page', 'warning');
       return [];
@@ -248,7 +248,7 @@ export async function scrapeSeason(seasonUrl, roundNumber = null, sleepBetween =
         } else {
           log(`⚠️ No data extracted from match ${i + 1}`, 'warning');
         }
-        
+
         // Sleep between requests to be polite
         if (i < matchUrls.length - 1) {
           await new Promise(resolve => setTimeout(resolve, sleepBetween));
