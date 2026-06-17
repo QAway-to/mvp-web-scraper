@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState } from "react";
 
 export default function ScrapedDataTable({ data }) {
   const [currentPage, setCurrentPage] = useState(1);
@@ -6,52 +6,40 @@ export default function ScrapedDataTable({ data }) {
 
   if (!data || data.length === 0) {
     return (
-      <div className="card" style={{ textAlign: 'center', color: '#9ca3af' }}>
+      <div className="card" style={{ textAlign: "center", color: "#64748B", padding: "40px 24px" }}>
         No data to display
       </div>
     );
   }
 
-  // Get all unique column names from all rows
   const allColumns = new Set();
-  data.forEach(row => {
-    Object.keys(row).forEach(key => allColumns.add(key));
-  });
+  data.forEach(row => Object.keys(row).forEach(key => allColumns.add(key)));
   const columns = Array.from(allColumns);
 
   const totalPages = Math.ceil(data.length / itemsPerPage);
   const startIndex = (currentPage - 1) * itemsPerPage;
-  const endIndex = startIndex + itemsPerPage;
-  const currentData = data.slice(startIndex, endIndex);
+  const currentData = data.slice(startIndex, startIndex + itemsPerPage);
 
   return (
-    <div className="card">
-      <header className="card-header">
-        <h3>📊 Scraped Data</h3>
-        <p>{data.length} rows extracted</p>
-      </header>
-      <div style={{ overflowX: 'auto', marginTop: '16px' }}>
+    <div className="card" style={{ padding: 0, overflow: "hidden" }}>
+      <div style={{ padding: "16px 24px", borderBottom: "1px solid #1E1E2E" }}>
+        <span className="card-header" style={{ display: "block", marginBottom: 0 }}>
+          <h3 style={{ margin: 0 }}>Data</h3>
+        </span>
+      </div>
+      <div style={{ overflowX: "auto" }}>
         <table className="data-table">
           <thead>
             <tr>
-              {columns.map((col, idx) => (
-                <th key={idx}>
-                  {col}
-                </th>
-              ))}
+              {columns.map(col => <th key={col}>{col}</th>)}
             </tr>
           </thead>
           <tbody>
-            {currentData.map((row, rowIdx) => (
-              <tr key={rowIdx}>
-                {columns.map((col, colIdx) => {
-                  const value = row[col];
-                  return (
-                    <td key={colIdx} style={{ whiteSpace: 'nowrap' }}>
-                      {value !== null && value !== undefined ? String(value) : ''}
-                    </td>
-                  );
-                })}
+            {currentData.map((row, i) => (
+              <tr key={i}>
+                {columns.map(col => (
+                  <td key={col}>{row[col] !== undefined ? String(row[col]) : "—"}</td>
+                ))}
               </tr>
             ))}
           </tbody>
@@ -59,26 +47,23 @@ export default function ScrapedDataTable({ data }) {
       </div>
       {totalPages > 1 && (
         <div className="pagination">
-          <button
-            onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
-            disabled={currentPage === 1}
-            className="btn"
-          >
-            ← Previous
-          </button>
           <span className="pagination-info">
-            Page {currentPage} of {totalPages}
+            {startIndex + 1}–{Math.min(startIndex + itemsPerPage, data.length)} of {data.length}
           </span>
-          <button
-            onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
-            disabled={currentPage === totalPages}
-            className="btn"
-          >
-            Next →
-          </button>
+          <div style={{ display: "flex", gap: "8px" }}>
+            <button
+              className="btn"
+              onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
+              disabled={currentPage === 1}
+            >Prev</button>
+            <button
+              className="btn"
+              onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
+              disabled={currentPage === totalPages}
+            >Next</button>
+          </div>
         </div>
       )}
     </div>
   );
 }
-
